@@ -1,0 +1,53 @@
+//發送端 / Maste
+#include <SoftwareSerial.h>
+
+// 定義藍牙: RX接10, TX接11
+SoftwareSerial BTSerial(10, 11); 
+
+// 定義變數
+int pwmValue = 0;      // 用來記錄目前 PWM 的數值 (0~255)
+int pwmPin = 9;        // PWM 輸出腳位
+int analogPin = A0;    // 類比輸入腳位
+
+void setup() {
+  Serial.begin(9600);    // 電腦監控用
+  BTSerial.begin(9600);  // 藍牙傳輸用
+  
+  pinMode(pwmPin, OUTPUT);
+  Serial.println("Master Ready: PWM on Pin 9, Sending A0 voltage.");
+}
+
+void loop() {
+  // --- 任務 1: PWM 輸出 ---
+  analogWrite(pwmPin, pwmValue); // 在 Pin 9 輸出目前的 PWM 值
+  
+  // 更新 PWM數值，準備給下一次用
+  pwmValue = pwmValue + 1; 
+  
+  // 如果超過 255，就歸零
+  if (pwmValue > 255) {
+    pwmValue = 0;
+  }
+
+  // --- 任務 2: 讀取 A0 並發送電壓 ---
+  // 讀取 A0 的原始數值 (範圍是 0 到 1023)
+  int sensorValue = analogRead(analogPin);
+  
+  // 將數值換算成電壓 (0 ~ 5V)
+  // 公式：原始值 * (5.0 / 1023.0)
+  float voltage = sensorValue * (5.0 / 1023.0);
+
+  // 為了方便除錯，電腦視窗也印一份
+  Serial.print("PWM: ");
+  Serial.print(pwmValue);
+  Serial.print(" | Sending Voltage: ");
+  Serial.println(voltage);
+
+  // 【關鍵】透過藍牙發送電壓值
+  // 使用 println 會在數值後面加一個換行符號，接收端才知道這是一個完整的數字
+  BTSerial.println(voltage); 
+
+  // --- 時間控制 ---
+  // 題目要求每隔 0.1 秒 (100毫秒) +1
+  delay(100); 
+}
